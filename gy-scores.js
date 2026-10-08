@@ -1,6 +1,6 @@
 /* GY Industries — drop-in score tracking for games.
    Add to a game's HTML:
-     <script src="https://gyindustries.netlify.app/gy-scores.js" data-game="acorn-dash"></script>
+     <script src="https://gyindustries.vercel.app/gy-scores.js" data-game="acorn-dash"></script>
    Then call, when a round ends:   GY.submitScore(score);
    Players log in with the account they made on the GY Industries site. */
 (function(){
@@ -28,7 +28,7 @@
     var email = window.prompt('Email for your GY Industries account:'); if(!email) return;
     var pw = window.prompt('Password:'); if(!pw) return;
     sb.auth.signInWithPassword({ email: email.trim(), password: pw }).then(function(r){
-      if(r.error){ window.alert('Could not log in. Check your email and password (create an account on gyindustries.netlify.app first).'); return; }
+      if(r.error){ window.alert('Could not log in. Check your email and password (create an account on gyindustries.vercel.app first).'); return; }
       refresh();
     });
   }

@@ -223,6 +223,9 @@
   .admin-del:hover{ color:var(--terracotta); border-color:var(--terracotta); }
   .mini-btn{ padding:6px 10px; border-radius:8px; border:1px solid var(--line-strong); background:var(--panel); color:var(--ink); font:inherit; font-size:12px; font-weight:600; cursor:pointer; }
   .mini-btn.danger{ color:var(--terracotta-dark); border-color:var(--terracotta); }
+  .admin-row.team-row{ grid-template-columns:1.3fr 1.3fr .8fr .8fr 34px; }
+  .admin-row.access-row{ grid-template-columns:2fr 1fr 90px; }
+  @media(max-width:680px){ .admin-row.team-row, .admin-row.access-row{ grid-template-columns:1fr 1fr; } }
   .status-badge.banned{ background:rgba(168,90,44,0.15); color:var(--terracotta-dark); }
   .admin-search{ padding:14px 22px 0; }
 
@@ -755,7 +758,7 @@
       <h3>3. What other people can see</h3>
       <p>Your username and best score appear on public leaderboards. Your email address is never shown publicly. A small number of GY Industries staff can see usernames, email addresses and join dates in order to manage accounts and deal with abuse.</p>
       <h3>4. Who helps us run the site</h3>
-      <p>We use trusted services to run the website: Supabase (accounts and database), Netlify (website hosting), jsDelivr (a code library delivery network) and Google Fonts (typefaces). These providers may process data on servers in other countries. Our games are hosted on separate websites; when you log in inside a game, it uses the same account and sends only your score.</p>
+      <p>We use trusted services to run the website: Supabase (accounts and database), Vercel (website hosting), jsDelivr (a code library delivery network) and Google Fonts (typefaces). These providers may process data on servers in other countries. Our games are hosted on separate websites; when you log in inside a game, it uses the same account and sends only your score.</p>
       <h3>5. Keeping and deleting your data</h3>
       <p>You can delete your account at any time from the Login button &rarr; Delete my account. This permanently removes your profile, favorites and scores. Anonymous visit statistics may be kept because they cannot be tied back to you. To ask for a copy of your data or for help deleting it, email us at the address below.</p>
       <h3>6. Children</h3>
@@ -980,26 +983,32 @@
           <div class="admin-table" id="players-admin"></div>
         </div>
 
-        <!-- TEAM TABLE -->
+        <!-- TEAM MEMBERS -->
         <div class="admin-panel">
           <div class="admin-panel-head">
             <h4 data-i18n="team.eyebrow">The Team</h4>
-            
+            <span class="admin-panel-note">Edits save when you leave a box and show on the About page</span>
           </div>
-          <div class="admin-table">
-            <div class="admin-row admin-row-head">
-              <span data-i18n="admin.col.name">Name</span>
-              <span data-i18n="admin.col.role">Role</span>
-              <span data-i18n="admin.col.access">Access</span>
-              <span data-i18n="admin.col.status">Status</span>
-            </div>
-            <div class="admin-row"><span>Grish Pincha</span><span data-i18n="role.founder">Founder</span><span data-i18n="admin.access.owner">Owner</span><span class="status-badge live" data-i18n="admin.status.active">Active</span></div>
-            <div class="admin-row"><span>Yavya Pincha</span><span data-i18n="role.cofounder">Co-Founder</span><span data-i18n="admin.access.owner">Owner</span><span class="status-badge live" data-i18n="admin.status.active">Active</span></div>
-            <div class="admin-row"><span>K. Joshan Sri Reddy</span><span data-i18n="role.cmSales">Chief Marketing &amp; Sales</span><span data-i18n="admin.access.staff">Staff</span><span class="status-badge live" data-i18n="admin.status.active">Active</span></div>
-            <div class="admin-row"><span>M. Akif</span><span data-i18n="role.designer">Designer</span><span data-i18n="admin.access.staff">Staff</span><span class="status-badge live" data-i18n="admin.status.active">Active</span></div>
-            <div class="admin-row"><span>Harshaan. D</span><span data-i18n="role.cfo">Chief Finance</span><span data-i18n="admin.access.staff">Staff</span><span class="status-badge live" data-i18n="admin.status.active">Active</span></div>
-            <div class="admin-row"><span>B. Advay</span><span data-i18n="role.marketing">Marketing</span><span data-i18n="admin.access.staff">Staff</span><span class="status-badge live" data-i18n="admin.status.active">Active</span></div>
-            <div class="admin-row"><span>Namit</span><span data-i18n="role.illustrator">Illustrator</span><span data-i18n="admin.access.staff">Staff</span><span class="status-badge live" data-i18n="admin.status.active">Active</span></div>
+          <div class="admin-table" id="team-admin"></div>
+          <div class="admin-form team-form">
+            <input id="tm-name" class="admin-input" maxlength="60" placeholder="Name">
+            <input id="tm-role" class="admin-input" maxlength="60" placeholder="Role, e.g. Designer">
+            <select id="tm-grp" class="admin-select" aria-label="Section"><option value="team">Team</option><option value="founder">Founders</option></select>
+            <div><button class="btn btn-primary" onclick="addTeamMember()">Add team member</button></div>
+          </div>
+        </div>
+
+        <!-- STAFF ACCESS -->
+        <div class="admin-panel">
+          <div class="admin-panel-head">
+            <h4>Staff access</h4>
+            <span class="admin-panel-note">Who can open this dashboard</span>
+          </div>
+          <div class="admin-table" id="staff-admin"></div>
+          <div class="admin-form" id="staff-add-form" hidden>
+            <input id="sa-email" class="admin-input" type="email" placeholder="Email of the person to give access">
+            <div class="admin-panel-note" style="padding:0;">They must first create a normal account on the site and confirm their email. Only owners can add or remove staff.</div>
+            <div><button class="btn btn-primary" onclick="addStaffAccess()">Give staff access</button></div>
           </div>
         </div>
 
@@ -1590,7 +1599,7 @@
   async function enterAdmin(){
     $('staff-lock').style.display = 'none';
     $('staff-content').style.display = 'block';
-    await Promise.all([ loadAdminGames(), loadAdminSettings(), loadMetrics(), loadAdminNews(), loadAdminPlayers() ]);
+    await Promise.all([ loadAdminGames(), loadAdminSettings(), loadMetrics(), loadAdminNews(), loadAdminPlayers(), loadAdminTeam(), loadAdminStaff() ]);
   }
 
   /* ---------- admin: metrics ---------- */
@@ -1925,6 +1934,138 @@
     toast(tr('profile.saved'));
   };
 
+
+  /* ---------- team members (About page + dashboard) ---------- */
+  let teamCache = [];
+  const ROLE_KEYS = {};
+  (function(){
+    try{
+      const t = document.createElement('textarea');
+      Object.keys(i18nOriginals).forEach(function(k){ if(k.indexOf('role.') === 0){ t.innerHTML = i18nOriginals[k]; ROLE_KEYS[t.value.trim()] = k; } });
+    }catch(e){}
+  })();
+  function initials(name){
+    const parts = name.replace(/[^\p{L}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
+    if(!parts.length) return '?';
+    if(parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  function teamCard(m, cls){
+    const c = el('div', 'founder-card');
+    c.appendChild(el('div', 'avatar ' + cls, initials(m.name)));
+    c.appendChild(el('h4', '', m.name));
+    const r = el('div', 'role', m.role);
+    const key = ROLE_KEYS[m.role.trim()];
+    if(key){
+      r.setAttribute('data-i18n', key);
+      const lang = document.documentElement.lang || 'en';
+      const dict = typeof translations !== 'undefined' ? translations[lang] : null;
+      if(lang !== 'en' && dict && dict[key] !== undefined) r.innerHTML = dict[key];
+    }
+    c.appendChild(r);
+    return c;
+  }
+  function renderTeam(){
+    if(!teamCache.length) return;      // keep the built-in cards if nothing came back
+    const fg = document.querySelector('.founders-grid'), tg = document.querySelector('.team-grid');
+    if(!fg || !tg) return;
+    fg.replaceChildren(); tg.replaceChildren();
+    const founders = teamCache.filter(m => m.grp === 'founder'), team = teamCache.filter(m => m.grp !== 'founder');
+    founders.forEach((m, i) => fg.appendChild(teamCard(m, ['a1','a2'][i % 2])));
+    team.forEach((m, i) => tg.appendChild(teamCard(m, ['a3','a4','a5','a6'][i % 4])));
+  }
+  async function loadTeam(){
+    if(!sb) return;
+    const { data, error } = await sb.from('team_members').select('id,name,role,grp,sort_order,visible').eq('visible', true).order('sort_order');
+    if(!error && data && data.length){ teamCache = data; renderTeam(); }
+  }
+  async function loadAdminTeam(){
+    const table = $('team-admin'); table.replaceChildren();
+    const { data, error } = await sb.from('team_members').select('id,name,role,grp,sort_order,visible').order('sort_order');
+    if(error || !data) return;
+    data.forEach(function(m){
+      const row = el('div', 'admin-row team-row');
+      const save = async function(patch, revert){
+        if(patch.name !== undefined && !patch.name.trim()){ toast('Name cannot be empty', true); revert(); return; }
+        if(patch.role !== undefined && !patch.role.trim()){ toast('Role cannot be empty', true); revert(); return; }
+        const { error: e } = await sb.from('team_members').update(patch).eq('id', m.id);
+        if(e){ toast('Could not save: ' + e.message, true); revert(); return; }
+        Object.assign(m, patch); toast('Saved'); loadTeam();
+      };
+      const name = el('input', 'admin-input'); name.value = m.name; name.maxLength = 60; name.setAttribute('aria-label', 'Name');
+      name.addEventListener('change', () => save({ name: name.value.trim() }, () => name.value = m.name));
+      const role = el('input', 'admin-input'); role.value = m.role; role.maxLength = 60; role.setAttribute('aria-label', 'Role');
+      role.addEventListener('change', () => save({ role: role.value.trim() }, () => role.value = m.role));
+      const grp = el('select', 'admin-select'); grp.setAttribute('aria-label', 'Section');
+      [['founder','Founders'],['team','Team']].forEach(o => { const op = el('option', '', o[1]); op.value = o[0]; grp.appendChild(op); });
+      grp.value = m.grp;
+      grp.addEventListener('change', () => save({ grp: grp.value }, () => grp.value = m.grp));
+      const vis = el('select', 'admin-select'); vis.setAttribute('aria-label', 'Shown on About page');
+      [['true','Shown'],['false','Hidden']].forEach(o => { const op = el('option', '', o[1]); op.value = o[0]; vis.appendChild(op); });
+      vis.value = String(m.visible);
+      vis.addEventListener('change', () => save({ visible: vis.value === 'true' }, () => vis.value = String(m.visible)));
+      const del = el('button', 'admin-del', '×'); del.type = 'button'; del.title = 'Remove'; del.setAttribute('aria-label', 'Remove ' + m.name);
+      del.addEventListener('click', async function(){
+        if(!window.confirm('Remove ' + m.name + ' from the team list?')) return;
+        const { error: e } = await sb.from('team_members').delete().eq('id', m.id);
+        if(e){ toast('Could not remove: ' + e.message, true); return; }
+        await loadAdminTeam(); await reloadTeamAfterChange(); toast('Removed');
+      });
+      [name, role, grp, vis, del].forEach(n => row.appendChild(n));
+      table.appendChild(row);
+    });
+  }
+  // after removing the last visible person the built-in cards would otherwise stay
+  async function reloadTeamAfterChange(){
+    const { data } = await sb.from('team_members').select('id,name,role,grp,sort_order,visible').eq('visible', true).order('sort_order');
+    teamCache = data || [];
+    if(teamCache.length) renderTeam();
+    else { const fg = document.querySelector('.founders-grid'), tg = document.querySelector('.team-grid'); if(fg) fg.replaceChildren(); if(tg) tg.replaceChildren(); }
+  }
+  window.addTeamMember = async function(){
+    const name = $('tm-name').value.trim(), role = $('tm-role').value.trim();
+    if(!name || !role){ toast('Please enter a name and a role', true); return; }
+    const { data: all } = await sb.from('team_members').select('sort_order');
+    const order = ((all || []).reduce((m, r) => Math.max(m, r.sort_order || 0), 0)) + 1;
+    const { error } = await sb.from('team_members').insert({ name: name.slice(0, 60), role: role.slice(0, 60), grp: $('tm-grp').value, sort_order: order, visible: true });
+    if(error){ toast('Could not add: ' + error.message, true); return; }
+    $('tm-name').value = ''; $('tm-role').value = '';
+    await loadAdminTeam(); await reloadTeamAfterChange(); toast('Added');
+  };
+
+  /* ---------- staff access (owners can add / remove) ---------- */
+  async function loadAdminStaff(){
+    const table = $('staff-admin'); table.replaceChildren();
+    const { data, error } = await sb.rpc('staff_list');
+    if(error || !data) return;
+    const myEmail = (currentUser && currentUser.email || '').toLowerCase();
+    const iAmOwner = data.some(r => r.is_owner && r.email.toLowerCase() === myEmail);
+    $('staff-add-form').hidden = !iAmOwner;
+    data.forEach(function(r){
+      const row = el('div', 'admin-row access-row');
+      row.appendChild(el('span', '', r.email));
+      row.appendChild(el('span', 'status-badge ' + (r.is_owner || r.has_account ? 'live' : 'banned'), r.is_owner ? 'Owner' : (r.has_account ? 'Active' : 'Waiting for sign-up')));
+      if(iAmOwner && !r.is_owner){
+        const b = el('button', 'mini-btn danger', 'Remove'); b.type = 'button';
+        b.addEventListener('click', async function(){
+          if(!window.confirm('Remove dashboard access for ' + r.email + '?')) return;
+          const { error: e } = await sb.rpc('remove_staff', { target_email: r.email });
+          if(e){ toast('Could not remove: ' + e.message, true); return; }
+          await loadAdminStaff(); toast('Access removed');
+        });
+        row.appendChild(b);
+      } else row.appendChild(el('span'));
+      table.appendChild(row);
+    });
+  }
+  window.addStaffAccess = async function(){
+    const email = $('sa-email').value.trim();
+    if(!/^\S+@\S+\.\S+$/.test(email)){ toast('Please enter a valid email', true); return; }
+    const { error } = await sb.rpc('add_staff', { new_email: email });
+    if(error){ toast('Could not add: ' + error.message, true); return; }
+    $('sa-email').value = ''; await loadAdminStaff(); toast('Access given');
+  };
+
   /* ---------- keep dynamic text in step with the language switcher ---------- */
   const baseSetLanguage = window.setLanguage;
   if(typeof baseSetLanguage === 'function'){
@@ -1955,7 +2096,7 @@
     });
     try{ const { data } = await sb.auth.getSession(); currentUser = data && data.session ? data.session.user : null; }catch(e){}
     await Promise.all([ loadPublicConfig(), refreshIdentity() ]);
-    loadLeaderboard(); loadNews();
+    loadLeaderboard(); loadNews(); loadTeam();
     try{
       if(!isStaff && !sessionStorage.getItem('gy_visit')){ sessionStorage.setItem('gy_visit', '1'); track('visit'); }
     }catch(e){ if(!isStaff) track('visit'); }

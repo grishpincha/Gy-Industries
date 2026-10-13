@@ -751,7 +751,7 @@
       <p class="legal-meta"><span data-i18n="legal.updated">Last updated: 7 October 2026</span> &middot; <span data-i18n="legal.englishOnly">This page is available in English only.</span></p>
       <p>GY Industries (&ldquo;we&rdquo;, &ldquo;us&rdquo;) is a small independent game studio founded in October 2025 by two brothers, Grish Pincha and Yavya Pincha. This policy explains what information this website collects, why, and the choices you have. We have tried to keep it short and in plain words.</p>
       <h3>1. What we collect</h3>
-      <ul><li><b>Account details</b> &mdash; your email address, a username you choose, and your password. Your password is stored in scrambled (hashed) form by our account provider; we can never see it.</li><li><b>Things you do with your account</b> &mdash; games you save as favorites, your best scores, and an optional avatar and short bio.</li><li><b>Anonymous visit statistics</b> &mdash; a random ID stored in your browser, your chosen language, and which game links get clicked. This is not linked to your name or email.</li><li><b>Settings in your browser</b> &mdash; your language choice and your login session, kept on your own device.</li></ul>
+      <ul><li><b>Account details</b> &mdash; your email address, a username you choose, and your password. A GY Industries team member can also create an account for you (for example at an event or at school); you can change the password at any time with &ldquo;Forgot password?&rdquo;. Your password is stored in scrambled (hashed) form by our account provider; we can never see it.</li><li><b>Things you do with your account</b> &mdash; games you save as favorites, your best scores, and an optional avatar and short bio.</li><li><b>Anonymous visit statistics</b> &mdash; a random ID stored in your browser, your chosen language, and which game links get clicked. This is not linked to your name or email.</li><li><b>Settings in your browser</b> &mdash; your language choice and your login session, kept on your own device.</li></ul>
       <h3>2. How we use it</h3>
       <ul><li>To run your account, favorites, profile and the leaderboards.</li><li>To understand how many people visit and which games are popular, so we can improve the site.</li><li>To keep the site fair and safe, including removing cheated scores and suspending accounts that break our Terms.</li></ul>
       <p>We do not sell your information. We do not show advertising and we do not use advertising trackers.</p>
@@ -978,6 +978,17 @@
           <div class="admin-panel-head">
             <h4>Players</h4>
             <span class="admin-panel-note" id="players-note">Loading&hellip;</span>
+          </div>
+          <div class="admin-form create-player-form">
+            <div class="acct-h" style="margin:0;">Create a player account</div>
+            <input id="cp-email" class="admin-input" type="email" placeholder="Player's email" autocomplete="off">
+            <input id="cp-user" class="admin-input" maxlength="20" placeholder="Username (letters, numbers, _)" autocomplete="off">
+            <div style="display:flex;gap:8px;">
+              <input id="cp-pass" class="admin-input" placeholder="Password (8+ characters)" autocomplete="off">
+              <button type="button" class="btn btn-outline" onclick="genPassword()">Generate</button>
+            </div>
+            <div><button class="btn btn-primary" id="cp-btn" onclick="createPlayer()">Create account</button></div>
+            <div id="cp-result" class="auth-msg" style="text-align:left;" role="status"></div>
           </div>
           <div class="admin-search"><input id="pl-search" class="admin-input" placeholder="Search by username or email" oninput="renderPlayers()"></div>
           <div class="admin-table" id="players-admin"></div>
@@ -2064,6 +2075,39 @@
     const { error } = await sb.rpc('add_staff', { new_email: email });
     if(error){ toast('Could not add: ' + error.message, true); return; }
     $('sa-email').value = ''; await loadAdminStaff(); toast('Access given');
+  };
+
+
+  /* ---------- admin: create a player account directly ---------- */
+  window.genPassword = function(){
+    const cs = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    const a = new Uint32Array(12); crypto.getRandomValues(a);
+    $('cp-pass').value = Array.from(a, n => cs[n % cs.length]).join('');
+  };
+  function cpMessage(text, isErr){ const r = $('cp-result'); r.textContent = text; r.className = 'auth-msg' + (text ? (isErr ? ' err' : ' ok') : ''); }
+  window.createPlayer = async function(){
+    const email = $('cp-email').value.trim(), username = $('cp-user').value.trim(), password = $('cp-pass').value;
+    if(!/^\S+@\S+\.\S+$/.test(email)){ cpMessage('Please enter a valid email.', true); return; }
+    if(!/^[A-Za-z0-9_]{3,20}$/.test(username)){ cpMessage('Username must be 3-20 letters, numbers or underscores.', true); return; }
+    if(password.length < 8){ cpMessage('Password must be at least 8 characters (tap Generate for one).', true); return; }
+    const btn = $('cp-btn'); btn.disabled = true; cpMessage('Creating…', false);
+    try{
+      const { error } = await sb.functions.invoke('create-player', { body: { email: email, username: username, password: password } });
+      if(error){
+        let msg = 'Could not create the account.';
+        try{
+          const ctx = error.context;
+          if(ctx && ctx.status === 404) msg = 'The create-player function is not set up in Supabase yet. See the setup steps.';
+          else if(ctx && ctx.json){ const j = await ctx.json(); if(j && j.error) msg = j.error; }
+          else if(error.name === 'FunctionsFetchError') msg = 'Could not reach the create-player function. Is it deployed?';
+        }catch(e){}
+        cpMessage(msg, true); return;
+      }
+      cpMessage('Created! Username: ' + username + '  |  Email: ' + email + '  |  Password: ' + password + '  — share these privately. They can change the password with "Forgot password?" on the login window.', false);
+      ['cp-email','cp-user','cp-pass'].forEach(id => $(id).value = '');
+      toast('Account created');
+      loadAdminPlayers(); loadMetrics();
+    } finally { btn.disabled = false; }
   };
 
   /* ---------- keep dynamic text in step with the language switcher ---------- */
